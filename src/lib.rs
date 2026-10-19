@@ -16,6 +16,65 @@ impl TowerOfHanoi {
         }
     }
 
+    pub fn reset(&mut self, number_of_rings: Option<u8>) {
+        *self = Self::new(number_of_rings.unwrap_or(self.get_rings_num()));
+    }
+
+    pub fn solve(&mut self, verbose: bool) {
+        if self.get_solved() {
+            if verbose {
+                println!("Already solved");
+            }
+            return;
+        }
+        if verbose {
+            println!("\n------------------- STEPS -------------------");
+        }
+        self.move_rings(self.get_rings_num(), 0, 2, verbose);
+        if self.0 == Self::full_tower(self.get_rings_num()) << 42 {
+            self.set_solved();
+            if verbose {
+                println!("------------------ SOLVED!!! ----------------");
+            }
+        } else {
+            panic!("Solver error: solution not reached!");
+        }
+    }
+
+    fn move_top_ring(&mut self, from: u8, to: u8, verbose: bool) {
+        let Some(from_bit) = self.get_smallest_ring(from) else {
+            panic!("Invalid move: no rings on the source peg {from}");
+        };
+        let lowest_to_bit = self.get_smallest_ring(to);
+        match lowest_to_bit {
+            Some(x) if x < from_bit => {
+                panic!(
+                    "Invalid move: attempting to stack ring {} onto {}",
+                    from_bit, x
+                );
+            }
+            _ => {
+                if verbose {
+                    println!("Ring {} from peg {from} to peg {to}", from_bit);
+                }
+                let mask: u64 = (1 << Self::ring_to_bit(from, from_bit))
+                    | (1 << Self::ring_to_bit(to, from_bit));
+                self.0 ^= mask;
+            }
+        }
+    }
+
+    fn move_rings(&mut self, number: u8, from: u8, to: u8, verbose: bool) {
+        if number > 1 {
+            let buffer = 3 - from - to;
+            self.move_rings(number - 1, from, buffer, verbose);
+            self.move_top_ring(from, to, verbose);
+            self.move_rings(number - 1, buffer, to, verbose);
+        } else {
+            self.move_top_ring(from, to, verbose);
+        }
+    }
+
     fn full_tower(rings: u8) -> u64 {
         debug_assert!(
             rings > 0,
@@ -78,6 +137,20 @@ mod tests {
     }
 
     #[test]
+    fn get_solved_and_set_solved_both_use_the_highest_bit() {
+        let mut tower = TowerOfHanoi::new(5);
+        let solved_before = tower.get_solved();
+        tower.set_solved();
+        let solved_after = tower.get_solved();
+        assert!(!solved_before);
+        assert!(
+            solved_after,
+            "Solved state not modified by set_solved(): {:064b}",
+            tower.0
+        );
+    }
+
+    #[test]
     fn ring_to_bit_maps_correctly() {
         // Testing for ANY number of rings, on all pegs
         for x in 1u8..=20 {
@@ -121,6 +194,18 @@ mod tests {
                 let b_value = (tower.0 >> b) & 1;
                 assert_eq!(b_value, 1);
             }
+        }
+    }
+
+    /// Solves towers of every allowed size. `solve` panics if any move is
+    /// illegal or if the final state is wrong, so the test passes as long as
+    /// nothing panics.
+    #[test]
+    fn tower_is_correctly_solved() {
+        // Test for ANY number of rings
+        for rings in 1u8..=20 {
+            let mut tower = TowerOfHanoi::new(rings);
+            tower.solve(false);
         }
     }
 }
