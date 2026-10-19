@@ -7,6 +7,7 @@ authors = ["Valerio Di Napoli"]
 license = "MIT OR Apache-2.0"
 description = "A just-for-fun Rust take on Tower of Hanoi: the entire game state lives in one 64-bit integer, and every move is a single XOR."
 repository = "https://github.com/vale-dinap/hanoi64"
+readme = "README.md"
 keywords = ["tower-of-hanoi", "puzzle", "bitboard", "bit-manipulation"]
 categories = ["games", "algorithms", "command-line-utilities"]
 
